@@ -1,3 +1,5 @@
+using System.Numerics;
+
 namespace BackPropNN;
 
 // We don't use anything built in, so that we can understand all the things that are happening!
@@ -29,11 +31,36 @@ class Vector
         if (v1.Length != v2.Length)
             throw new ArgumentException("Vectors must be the same size for dot product");
 
+        int i = 0;
         double sum = 0;
-        for (int i = 0; i < v1.Length; i++)
+
+        // Process in chunks of Vector<double>.Count
+        if (System.Numerics.Vector.IsHardwareAccelerated && v1.Length >= Vector<double>.Count)
+        {
+            int vectorSize = Vector<double>.Count;
+            int lastVector = v1.Length - (v1.Length % vectorSize);
+            Vector<double> sumVector = Vector<double>.Zero;
+
+            for (; i < lastVector; i += vectorSize)
+            {
+                Vector<double> va = new Vector<double>(v1._elements, i);
+                Vector<double> vb = new Vector<double>(v2._elements, i);
+                sumVector += va * vb;
+            }
+
+            // Sum all elements in the vector
+            for (int j = 0; j < vectorSize; j++)
+            {
+                sum += sumVector[j];
+            }
+        }
+
+        // Process remaining elements
+        for (; i < v1.Length; i++)
         {
             sum += v1[i] * v2[i];
         }
+
         return sum;
     }
 

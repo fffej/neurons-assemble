@@ -4,29 +4,16 @@ namespace BackPropNN;
 
 class NeuralNetworkImpl : NeuralNetwork
 {
-    private List<Layer> _layers = new List<Layer>();
+    private List<Layer> _layers = []; 
 
     public NeuralNetworkImpl(NeuralNetworkFactory factory, params int[] layerSizes)
     {
-        // Create layers based on the provided sizes
         for (int i = 1; i < layerSizes.Length; i++)
-        {
             _layers.Add(factory.CreateLayer(layerSizes[i], layerSizes[i - 1]));
-        }
     }
 
-    public Vector FeedForward(Vector inputs)
-    {
-        Vector currentOutputs = inputs;
-
-        // Pass inputs through each layer
-        foreach (var layer in _layers)
-        {
-            currentOutputs = layer.FeedForward(currentOutputs);
-        }
-
-        return currentOutputs;
-    }
+    public Vector FeedForward(Vector inputs) => 
+         _layers.Aggregate(inputs, (currentOutputs, layer) => layer.FeedForward(currentOutputs));
 
     public void BackPropagate(Vector initialInputs, Vector outputErrors, double learningRate)
     {
@@ -36,7 +23,7 @@ class NeuralNetworkImpl : NeuralNetwork
         // allActivations[0] will be the initial network inputs.
         // allActivations[1] will be the outputs of _layers[0] (inputs to _layers[1]).
         // allActivations[k+1] will be the outputs of _layers[k] (inputs to _layers[k+1]).
-        List<Vector> allActivations = new List<Vector> { initialInputs };
+        var allActivations = new List<Vector> { initialInputs };
 
         // Forward pass to collect all layer INPUTS (outputs of previous layers)
         var currentLayerInputsForForwardPass = initialInputs;
@@ -60,7 +47,7 @@ class NeuralNetworkImpl : NeuralNetwork
 
     public override string ToString()
     {
-        StringBuilder sb = new StringBuilder();
+        var sb = new StringBuilder();
         for (int i = 0; i < _layers.Count; i++)
         {
             sb.AppendLine($"Layer {i + 1}:");

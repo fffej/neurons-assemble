@@ -6,10 +6,8 @@ class MultiInputNeuron : Neuron
 {
     private Vector _weights;
     private double _bias = 0;
-    private double _lastOutput; // Store the last output for backpropagation
-
-    public Vector Weights => _weights; // Allow access to weights
-    public double Bias => _bias;
+    // This just avoids having to recalculate the output
+    private double _lastOutput; 
 
     private static readonly Random _random = new Random();
 
@@ -17,9 +15,7 @@ class MultiInputNeuron : Neuron
     {
         _weights = new Vector(inputSize);
         for (int i = 0; i < _weights.Length; i++)
-        {
             _weights[i] = (_random.NextDouble() * 2 - 1) * 0.1; // Range (-0.1, 0.1)
-        }
         _bias = (_random.NextDouble() * 2 - 1) * 0.1;
     }
 
@@ -43,20 +39,15 @@ class MultiInputNeuron : Neuron
         double sigmoidDeriv = SigmoidDerivative(_lastOutput);
         double delta = error * sigmoidDeriv;
 
-        // Calculate errors for the previous layer
+        // Calculate errors
         Vector previousLayerErrors = new Vector(inputs.Length);
         for (int i = 0; i < _weights.Length; i++)
-        {
             previousLayerErrors[i] = delta * _weights[i];
-        }
 
         // Update each weight
         for (int i = 0; i < _weights.Length; i++)
-        {
             _weights[i] += learningRate * delta * inputs[i];
-        }
 
-        // Update bias
         _bias += learningRate * delta;
 
         return previousLayerErrors;

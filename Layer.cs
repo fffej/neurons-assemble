@@ -8,20 +8,17 @@ class LayerImpl : Layer
 
     public LayerImpl(int neuronCount, int inputsPerNeuron, Func<int, Neuron> funcFactory)
     {
-        _neurons = new MultiInputNeuron[neuronCount];
+        _neurons = new Neuron[neuronCount];
         for (int i = 0; i < neuronCount; i++)
-        {
             _neurons[i] = funcFactory(inputsPerNeuron); 
-        }
     }
 
     public Vector FeedForward(Vector inputs)
     {
-        Vector outputs = new Vector(_neurons.Length);
+        var outputs = new Vector(_neurons.Length);
         for (int i = 0; i < _neurons.Length; i++)
-        {
             outputs[i] = _neurons[i].FeedForward(inputs);
-        }
+
         return outputs;
     }
 
@@ -38,9 +35,7 @@ class LayerImpl : Layer
 
             // Accumulate errors for previous layer
             for (int j = 0; j < previousLayerErrors.Length; j++)
-            {
                 previousLayerErrors[j] += neuronErrors[j];
-            }
         }
 
         return previousLayerErrors;
@@ -48,11 +43,10 @@ class LayerImpl : Layer
 
     public override string ToString()
     {
-        StringBuilder sb = new StringBuilder();
+        var sb = new StringBuilder();
         for (int i = 0; i < _neurons.Length; i++)
-        {
             sb.AppendLine($"  Neuron {i + 1}: {_neurons[i]}");
-        }
+
         return sb.ToString();
     }
 }
