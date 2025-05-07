@@ -2,11 +2,11 @@ using System.Text;
 
 namespace BackPropNN;
 
-class Layer
+class LayerImpl : Layer
 {
     private Neuron[] _neurons;
 
-    public Layer(int neuronCount, int inputsPerNeuron, Func<int, Neuron> funcFactory)
+    public LayerImpl(int neuronCount, int inputsPerNeuron, Func<int, Neuron> funcFactory)
     {
         _neurons = new MultiInputNeuron[neuronCount];
         for (int i = 0; i < neuronCount; i++)
