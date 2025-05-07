@@ -3,55 +3,18 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
-class Vector
-{
-    private double[] _elements;
+namespace BackPropNN;
 
-    public Vector(int size)
-    {
-        _elements = new double[size];
-    }
-
-    public Vector(double[] elements)
-    {
-        _elements = new double[elements.Length];
-        Array.Copy(elements, _elements, elements.Length);
-    }
-
-    public double this[int index]
-    {
-        get { return _elements[index]; }
-        set { _elements[index] = value; }
-    }
-
-    public int Length => _elements.Length;
-
-    public static double DotProduct(Vector v1, Vector v2)
-    {
-        if (v1.Length != v2.Length)
-            throw new ArgumentException("Vectors must be the same size for dot product");
-
-        double sum = 0;
-        for (int i = 0; i < v1.Length; i++)
-        {
-            sum += v1[i] * v2[i];
-        }
-        return sum;
-    }
-
-    public override string ToString()
-    {
-        return string.Join(", ", _elements.Select((w, i) => $"W{i + 1}: {w:F6}"));
-    }
-}
-
+// All a neuron does is:
+// - take inputs, apply weights to them, and return an output.
+// - propagate errors back to the previous layer
 interface Neuron
 {
     double FeedForward(Vector inputs);
     Vector Backpropagate(Vector inputs, double error, double learningRate);
 }
 
-class MultiInputNeuron
+class MultiInputNeuron : Neuron
 {
     private Vector _weights;
     private double _bias = 0;
@@ -117,12 +80,12 @@ class NeuralNetwork
 {
     private List<Layer> _layers = new List<Layer>();
 
-    public NeuralNetwork(params int[] layerSizes)
+    public NeuralNetwork(Func<int, Neuron> neuronFactory, params int[] layerSizes)
     {
         // Create layers based on the provided sizes
         for (int i = 1; i < layerSizes.Length; i++)
         {
-            _layers.Add(new Layer(layerSizes[i], layerSizes[i - 1]));
+            _layers.Add(new Layer(layerSizes[i], layerSizes[i - 1], neuronFactory));
         }
     }
 
@@ -213,67 +176,12 @@ class NeuralNetwork
     }
 }
 
-class Layer
-{
-    private MultiInputNeuron[] _neurons;
-
-    public Layer(int neuronCount, int inputsPerNeuron)
-    {
-        _neurons = new MultiInputNeuron[neuronCount];
-        for (int i = 0; i < neuronCount; i++)
-        {
-            _neurons[i] = new MultiInputNeuron(inputsPerNeuron);
-        }
-    }
-
-    public Vector FeedForward(Vector inputs)
-    {
-        Vector outputs = new Vector(_neurons.Length);
-        for (int i = 0; i < _neurons.Length; i++)
-        {
-            outputs[i] = _neurons[i].FeedForward(inputs);
-        }
-        return outputs;
-    }
-
-    public Vector Backpropagate(Vector inputs, Vector errors, double learningRate)
-    {
-        // For hidden layers, we need to calculate errors for the previous layer
-        Vector previousLayerErrors = new Vector(inputs.Length);
-
-        // Update each neuron and accumulate errors for previous layer
-        for (int i = 0; i < _neurons.Length; i++)
-        {
-            // Get error contributions to previous layer from this neuron
-            var neuronErrors = _neurons[i].Backpropagate(inputs, errors[i], learningRate);
-
-            // Accumulate errors for previous layer
-            for (int j = 0; j < previousLayerErrors.Length; j++)
-            {
-                previousLayerErrors[j] += neuronErrors[j];
-            }
-        }
-
-        return previousLayerErrors;
-    }
-
-    public override string ToString()
-    {
-        StringBuilder sb = new StringBuilder();
-        for (int i = 0; i < _neurons.Length; i++)
-        {
-            sb.AppendLine($"  Neuron {i + 1}: {_neurons[i]}");
-        }
-        return sb.ToString();
-    }
-}
-
 class Program
 {
     static void Main(string[] args)
     {
         // Create a neural network with 2 inputs, 3 hidden neurons, and 1 output
-        NeuralNetwork network = new NeuralNetwork(2, 10, 1);
+        NeuralNetwork network = new NeuralNetwork((n) => new MultiInputNeuron(n), 2, 10, 1);
 
         // XOR training data
         double[][] inputs = new double[][]
