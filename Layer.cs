@@ -13,33 +13,15 @@ class LayerImpl : Layer
             _neurons[i] = funcFactory(inputsPerNeuron); 
     }
 
-    public Vector FeedForward(Vector inputs)
-    {
-        var outputs = new Vector(_neurons.Length);
-        for (int i = 0; i < _neurons.Length; i++)
-            outputs[i] = _neurons[i].FeedForward(inputs);
+    public Vector FeedForward(Vector inputs) => 
+        new Vector(_neurons.Select(n => n.FeedForward(inputs)).ToArray());
 
-        return outputs;
-    }
-
-    public Vector Backpropagate(Vector inputs, Vector errors, double learningRate)
-    {
-        // For hidden layers, we need to calculate errors for the previous layer
-        Vector previousLayerErrors = new Vector(inputs.Length);
-
-        // Update each neuron and accumulate errors for previous layer
-        for (int i = 0; i < _neurons.Length; i++)
-        {
-            // Get error contributions to previous layer from this neuron
-            var neuronErrors = _neurons[i].Backpropagate(inputs, errors[i], learningRate);
-
-            // Accumulate errors for previous layer
-            for (int j = 0; j < previousLayerErrors.Length; j++)
-                previousLayerErrors[j] += neuronErrors[j];
-        }
-
-        return previousLayerErrors;
-    }
+    public Vector Backpropagate(Vector inputs, Vector errors, double learningRate) =>
+        _neurons.Select((neuron, i) => neuron.Backpropagate(inputs, errors[i], learningRate))
+                  .Aggregate(
+                      new Vector(inputs.Length), // Start with a zero vector of the right size
+                      (accumulatedErrors, neuronErrors) => accumulatedErrors + neuronErrors
+                  );
 
     public override string ToString()
     {

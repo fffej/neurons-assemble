@@ -12,37 +12,33 @@ class NeuralNetworkImpl : NeuralNetwork
             _layers.Add(factory.CreateLayer(layerSizes[i], layerSizes[i - 1]));
     }
 
-    public Vector FeedForward(Vector inputs) => 
-         _layers.Aggregate(inputs, (currentOutputs, layer) => layer.FeedForward(currentOutputs));
+    private List<Vector> _activations = new List<Vector>();
+
+    public Vector FeedForward(Vector inputs) 
+    { 
+        _activations = new List<Vector> { inputs };
+        return _layers.Aggregate(inputs, (currentOutputs, layer) => {
+            var output = layer.FeedForward(currentOutputs);
+            _activations.Add(output);
+            return output;
+        });
+    }
 
     public void BackPropagate(Vector initialInputs, Vector outputErrors, double learningRate)
     {
-        var currentErrors = outputErrors;
+            // We assume that FeedForward has been called before this method
+            if (_activations.Count == 0)
+            {
+                // We don't go down this path, but just in case              
+                FeedForward(initialInputs);
+            }
 
-        // Store all activations for backward pass.
-        // allActivations[0] will be the initial network inputs.
-        // allActivations[1] will be the outputs of _layers[0] (inputs to _layers[1]).
-        // allActivations[k+1] will be the outputs of _layers[k] (inputs to _layers[k+1]).
-        var allActivations = new List<Vector> { initialInputs };
-
-        // Forward pass to collect all layer INPUTS (outputs of previous layers)
-        var currentLayerInputsForForwardPass = initialInputs;
-        foreach (var layer in _layers)
-        {
-            currentLayerInputsForForwardPass = layer.FeedForward(currentLayerInputsForForwardPass);
-            allActivations.Add(currentLayerInputsForForwardPass); // Add the OUTPUT of this layer
-        }
-
-        // Backward pass through layers in reverse order
-        // For _layers[i], the input it received was allActivations[i]
-        // The output it produced was allActivations[i+1]
-        for (int i = _layers.Count - 1; i >= 0; i--)
-        {
-            // The inputs to _layers[i] during the forward pass were the activations
-            // from the previous layer, which are stored in allActivations[i].
-            var layerOriginalInputs = allActivations[i];
-            currentErrors = _layers[i].Backpropagate(layerOriginalInputs, currentErrors, learningRate);
-        }
+            var _= Enumerable.Range(0, _layers.Count)
+                    .Reverse()
+                    .Aggregate(
+                        outputErrors,
+                        (currentErrors, i) => _layers[i].Backpropagate(_activations[i], currentErrors, learningRate)
+                    );   
     }
 
     public override string ToString()

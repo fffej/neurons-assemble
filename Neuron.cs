@@ -37,20 +37,14 @@ class MultiInputNeuron : Neuron
             throw new ArgumentException("Number of inputs must match number of weights");
 
         double sigmoidDeriv = SigmoidDerivative(_lastOutput);
-        double delta = error * sigmoidDeriv;
+        double delta = error * sigmoidDeriv;            
+        Vector errors = delta * _weights;
 
-        // Calculate errors
-        Vector previousLayerErrors = new Vector(inputs.Length);
-        for (int i = 0; i < _weights.Length; i++)
-            previousLayerErrors[i] = delta * _weights[i];
-
-        // Update each weight
-        for (int i = 0; i < _weights.Length; i++)
-            _weights[i] += learningRate * delta * inputs[i];
-
+        // Update weights and bias
+        _weights += learningRate * delta * inputs;        
         _bias += learningRate * delta;
-
-        return previousLayerErrors;
+        
+        return errors;
     }
 
     public override string ToString() => $"{_weights}, Bias: {_bias:F6}";
