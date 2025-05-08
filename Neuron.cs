@@ -2,6 +2,18 @@ using System.Text;
 
 namespace BackPropNN;
 
+public static class RandomExtensions
+{
+    public static double NextGaussian(this Random random, double mean = 0, double stdDev = 1)
+    {
+        // Box-Muller transform
+        double u1 = 1.0 - random.NextDouble(); // Uniform(0,1] random
+        double u2 = 1.0 - random.NextDouble();
+        double randStdNormal = Math.Sqrt(-2.0 * Math.Log(u1)) * Math.Sin(2.0 * Math.PI * u2);
+        return mean + stdDev * randStdNormal;
+    }
+}
+
 class MultiInputNeuron : Neuron
 {
     private Vector _weights;
@@ -13,11 +25,13 @@ class MultiInputNeuron : Neuron
 
     public MultiInputNeuron(int inputSize)
     {
-        // Poor initialization of weights and bias!
+        // Xavier initialization
         _weights = new Vector(inputSize);
-        for (int i = 0; i < _weights.Length; i++)
-            _weights[i] = (_random.NextDouble() * 2 - 1) * 0.1; // Range (-0.1, 0.1)
-        _bias = (_random.NextDouble() * 2 - 1) * 0.1;
+        double sqrtVariance = Math.Sqrt(1.0 / inputSize);
+        for (int i=0; i < _weights.Length; i++)
+            _weights[i] = _random.NextGaussian(0, sqrtVariance);
+
+        _bias = _random.NextGaussian(0, sqrtVariance);
     }
 
     public double FeedForward(Vector inputs)
