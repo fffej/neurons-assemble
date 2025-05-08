@@ -13,6 +13,7 @@ class MultiInputNeuron : Neuron
 
     public MultiInputNeuron(int inputSize)
     {
+        // Poor initialization of weights and bias!
         _weights = new Vector(inputSize);
         for (int i = 0; i < _weights.Length; i++)
             _weights[i] = (_random.NextDouble() * 2 - 1) * 0.1; // Range (-0.1, 0.1)
