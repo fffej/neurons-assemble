@@ -41,8 +41,62 @@ class Program
 
     static void Main(string[] args)
     {
+        OR();
         //XOR();
-        MNist();
+        //MNist();
+    }
+
+    class OrNeuron
+    {
+        private double _w1 = 0;
+        private double _w2 = 0;
+        private double _bias = 0;
+
+        public double FeedForward(double x1, double x2) => Sigmoid(_w1 * x1 + _w2 * x2 + _bias);
+
+        private double Sigmoid(double x) => 1 / (1 + Math.Exp(-x));
+        private double SigmoidDerivative(double output) => output * (1 - output);
+
+        public void Backpropagate(double x1, double x2, double error, double learningRate)
+        {
+            double output = FeedForward(x1, x2);
+            double sigmoidDeriv = SigmoidDerivative(output);
+            
+            _w1 += learningRate * error * sigmoidDeriv * x1;
+            _w2 += learningRate * error * sigmoidDeriv * x2;
+            _bias += learningRate * error * sigmoidDeriv;
+        }
+    }
+
+    static void OR()
+    {
+        double[][] inputs = [[0, 0], [0, 1], [1, 0], [1, 1]];
+        double[][] expectedOutputs = [ [0], [1], [1],  [1] ];
+
+        var neuron = new OrNeuron();
+
+        for (int epoch = 0; epoch < 100000; epoch++)
+        {
+            double totalError = 0;
+            for (int i = 0; i < inputs.Length; i++)
+            {
+                double output = neuron.FeedForward(inputs[i][0], inputs[i][1]);
+                double error = expectedOutputs[i][0] - output;
+                neuron.Backpropagate(inputs[i][0], inputs[i][1], error, 0.1);
+                totalError += Math.Abs(error);
+            }
+            if (epoch % 1000 == 0) 
+            {
+                Console.WriteLine($"Epoch {epoch}: Total error = {totalError}");
+            }
+        }
+
+        Console.WriteLine("Testing the network:");
+        foreach (var input in inputs)
+        {
+            double output = neuron.FeedForward(input[0], input[1]);
+            Console.WriteLine($"Input: ({input[0]}, {input[1]}) -> Output: {output:F4}");
+        }
     }
 
     static void XOR()
