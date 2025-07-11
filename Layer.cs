@@ -5,8 +5,8 @@ namespace BackPropNN;
 class LayerImpl : Layer
 {
     private Neuron[] _neurons;
-
     private Vector _output;
+    private Vector _neuronErrors; // Pre-allocated buffer for neuron errors
 
     public LayerImpl(int neuronCount, int inputsPerNeuron, Func<int, Neuron> funcFactory)
     {
@@ -14,6 +14,7 @@ class LayerImpl : Layer
         for (int i = 0; i < neuronCount; i++)
             _neurons[i] = funcFactory(inputsPerNeuron); 
         _output = new Vector(_neurons.Length);
+        _neuronErrors = new Vector(inputsPerNeuron); // Pre-allocate buffer for neuron errors
     }
 
     public Vector FeedForward(Vector inputs)
@@ -29,14 +30,11 @@ class LayerImpl : Layer
     {
         // Clear output errors first
         outputErrors.Zero();
-
-        // Create a temporary buffer for each neuron's errors
-        Vector neuronErrors = new Vector(inputs.Length);
         
         for (int i = 0; i < _neurons.Length; i++)
         {
-            _neurons[i].Backpropagate(inputs, errors[i], neuronErrors, learningRate);
-            outputErrors.AddInPlace(neuronErrors);
+            _neurons[i].Backpropagate(inputs, errors[i], _neuronErrors, learningRate);
+            outputErrors.AddInPlace(_neuronErrors);
         }
     }
 
