@@ -6,11 +6,18 @@ class NeuralNetworkImpl : NeuralNetwork
 {
     private List<Layer> _layers = []; 
     private List<Vector> _activations = new List<Vector>();
+    private List<Vector> _layerErrorBuffers = new List<Vector>(); // Pre-allocated buffers for layer errors
 
     public NeuralNetworkImpl(NeuralNetworkFactory factory, params int[] layerSizes)
     {
         for (int i = 1; i < layerSizes.Length; i++)
             _layers.Add(factory.CreateLayer(layerSizes[i], layerSizes[i - 1]));
+        
+        // Pre-allocate layer error buffers for each layer
+        for (int i = 0; i < layerSizes.Length - 1; i++)
+        {
+            _layerErrorBuffers.Add(new Vector(layerSizes[i]));
+        }
     }
 
     public Vector FeedForward(Vector inputs) 
@@ -42,9 +49,8 @@ class NeuralNetworkImpl : NeuralNetwork
         Vector currentErrors = outputErrors;
         for (int i = _layers.Count - 1; i >= 0; i--)
         {
-            Vector layerErrors = new Vector(_activations[i].Length); // Buffer for layer errors, sized to this layer's input
-            _layers[i].Backpropagate(_activations[i], currentErrors, layerErrors, learningRate);
-            currentErrors = layerErrors;
+            _layers[i].Backpropagate(_activations[i], currentErrors, _layerErrorBuffers[i], learningRate);
+            currentErrors = _layerErrorBuffers[i];
         }
     }
 

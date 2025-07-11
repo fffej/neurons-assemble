@@ -8,7 +8,7 @@ AMD Ryzen 9 7950X, 1 CPU, 32 logical and 16 physical cores
 
 
 ```
-| Method                | Mean               | Error            | StdDev           | Gen0       | Allocated   |
-|---------------------- |-------------------:|-----------------:|-----------------:|-----------:|------------:|
-| XOR_SingleIteration   |           468.9 ns |          6.98 ns |          6.52 ns |     0.0324 |       544 B |
-| MNIST_SingleIteration | 5,044,458,727.3 ns | 55,241,361.85 ns | 51,672,804.15 ns | 24000.0000 | 406080400 B |
+| Method                | Mean               | Error            | StdDev           | Allocated |
+|---------------------- |-------------------:|-----------------:|-----------------:|----------:|
+| XOR_SingleIteration   |           416.1 ns |          3.55 ns |          3.32 ns |         - |
+| MNIST_SingleIteration | 4,845,556,367.1 ns | 48,971,577.84 ns | 45,808,044.30 ns |     400 B |

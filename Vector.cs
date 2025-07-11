@@ -77,14 +77,6 @@ class Vector
         }
     }
 
-    public void MultiplyInPlace(double scalar)
-    {
-        for (int i = 0; i < Length; i++)
-        {
-            _elements[i] *= scalar;
-        }
-    }
-
     public static double DotProduct(Vector v1, Vector v2)
     {
         if (v1.Length != v2.Length)
