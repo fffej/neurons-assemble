@@ -123,6 +123,32 @@ class Vector
         return sum;
     }
 
+    public void MultiplyElementWise(ReadOnlySpan<double> other, double scalar)
+    {
+        if (other.Length != Length)
+            throw new ArgumentException("Span must be the same length for element-wise multiplication");
+        
+        var thisSpan = AsSpan();
+        
+        for (int i = 0; i < thisSpan.Length; i++)
+        {
+            thisSpan[i] = other[i] * scalar;
+        }
+    }
+
+    public void AddScaledElementWise(ReadOnlySpan<double> other, double scalar)
+    {
+        if (other.Length != Length)
+            throw new ArgumentException("Span must be the same length for scaled addition");
+        
+        var thisSpan = AsSpan();
+        
+        for (int i = 0; i < thisSpan.Length; i++)
+        {
+            thisSpan[i] += other[i] * scalar;
+        }
+    }
+
     // Create a new vector from a span
     public static Vector FromSpan(ReadOnlySpan<double> span)
     {

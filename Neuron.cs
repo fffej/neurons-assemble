@@ -55,20 +55,11 @@ class MultiInputNeuron : Neuron
         double sigmoidDeriv = SigmoidDerivative(_lastOutput);
         double delta = error * sigmoidDeriv;            
         
-        var weightsSpan = _weights.AsReadOnlySpan();
-        var errorsSpan = errors.AsSpan();
-        var inputsSpan = inputs.AsReadOnlySpan();
-        
-        for (int i = 0; i < weightsSpan.Length; i++)
-        {
-            errorsSpan[i] = weightsSpan[i] * delta;
-        }
+        // Calculate errors: errors[i] = weights[i] * delta
+        errors.MultiplyElementWise(_weights.AsReadOnlySpan(), delta);
 
-        var weightsWritableSpan = _weights.AsSpan();
-        for (int i = 0; i < weightsWritableSpan.Length; i++)
-        {
-            weightsWritableSpan[i] += learningRate * delta * inputsSpan[i];
-        }
+        // Update weights: weights[i] += learningRate * delta * inputs[i]
+        _weights.AddScaledElementWise(inputs.AsReadOnlySpan(), learningRate * delta);
         _bias += learningRate * delta;
     }
 
