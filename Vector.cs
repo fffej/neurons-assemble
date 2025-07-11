@@ -77,33 +77,11 @@ class Vector
         }
     }
 
-    // In-place element-wise multiplication
-    public void MultiplyInPlace(Vector other)
-    {
-        if (other.Length != Length)
-            throw new ArgumentException("Vectors must be the same length for element-wise multiplication");
-        
-        for (int i = 0; i < Length; i++)
-        {
-            _elements[i] *= other._elements[i];
-        }
-    }
-
-    // In-place scalar multiplication
     public void MultiplyInPlace(double scalar)
     {
         for (int i = 0; i < Length; i++)
         {
             _elements[i] *= scalar;
-        }
-    }
-
-    // In-place scalar addition
-    public void AddInPlace(double scalar)
-    {
-        for (int i = 0; i < Length; i++)
-        {
-            _elements[i] += scalar;
         }
     }
 
@@ -117,44 +95,7 @@ class Vector
             sum += v1[i] * v2[i];
 
         return sum;
-    }
-    
-    public static Vector operator *(double scalar, Vector vector)
-    {
-        double[] result = new double[vector.Length];
-        for (int i = 0; i < vector.Length; i++)
-        {
-            result[i] = vector[i] * scalar;
-        }
-        return new Vector(result, true); // Take ownership
-    }
-
-    public static Vector operator *(Vector left, Vector right)
-    {
-        if (left.Length != right.Length)
-            throw new ArgumentException("Vectors must be the same length for element-wise multiplication");
-            
-        double[] result = new double[left.Length];
-        for (int i = 0; i < left.Length; i++)
-        {
-            result[i] = left[i] * right[i];
-        }
-        return new Vector(result, true); // Take ownership
-    }
-
-    // Vector addition - optimized
-    public static Vector operator +(Vector left, Vector right)
-    {
-        if (left.Length != right.Length)
-            throw new ArgumentException("Vectors must be the same length for addition");
-            
-        double[] result = new double[left.Length];
-        for (int i = 0; i < left.Length; i++)
-        {
-            result[i] = left[i] + right[i];
-        }
-        return new Vector(result, true); // Take ownership
-    }
+    }      
     
     public override string ToString()
     {
