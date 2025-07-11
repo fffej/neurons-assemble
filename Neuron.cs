@@ -46,7 +46,7 @@ class MultiInputNeuron : Neuron
     private double Sigmoid(double x) => 1.0 / (1.0 + Math.Exp(-x));
     private double SigmoidDerivative(double output) => output * (1 - output);
 
-    public Vector Backpropagate(Vector inputs, double error, double learningRate)
+    public void Backpropagate(Vector inputs, double error, Vector errors, double learningRate)
     {
         if (inputs.Length != _weights.Length)
             throw new ArgumentException("Number of inputs must match number of weights");
@@ -54,18 +54,16 @@ class MultiInputNeuron : Neuron
         double sigmoidDeriv = SigmoidDerivative(_lastOutput);
         double delta = error * sigmoidDeriv;            
         
-        // Calculate errors
-        Vector errors = new Vector(_weights, false);
-        errors.MultiplyInPlace(delta);
+        for (int i = 0; i < _weights.Length; i++)
+        {
+            errors[i] = _weights[i] * delta;
+        }
 
-        // Update weights and bias
         for (int i = 0; i < _weights.Length; i++)
         {
             _weights[i] += learningRate * delta * inputs[i];
         }
         _bias += learningRate * delta;
-        
-        return errors;
     }
 
     public override string ToString() => $"{_weights}, Bias: {_bias:F6}";

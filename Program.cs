@@ -10,13 +10,13 @@ namespace BackPropNN;
 interface Neuron
 {
     double FeedForward(Vector inputs);
-    Vector Backpropagate(Vector inputs, double error, double learningRate);
+    void Backpropagate(Vector inputs, double error, Vector errors, double learningRate);
 }
 
 interface Layer
 {
     Vector FeedForward(Vector inputs);
-    Vector Backpropagate(Vector inputs, Vector errors, double learningRate);
+    void Backpropagate(Vector inputs, Vector errors, Vector outputErrors, double learningRate);
 }
 
 interface NeuralNetwork

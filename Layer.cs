@@ -23,17 +23,19 @@ class LayerImpl : Layer
         return outputs;
     }
 
-    public Vector Backpropagate(Vector inputs, Vector errors, double learningRate)
+    public void Backpropagate(Vector inputs, Vector errors, Vector outputErrors, double learningRate)
     {
-        Vector accumulatedErrors = new Vector(inputs.Length);
+        // Clear output errors first
+        outputErrors.Zero();
+
+        // Create a temporary buffer for each neuron's errors
+        Vector neuronErrors = new Vector(inputs.Length);
         
         for (int i = 0; i < _neurons.Length; i++)
         {
-            Vector neuronErrors = _neurons[i].Backpropagate(inputs, errors[i], learningRate);
-            accumulatedErrors.AddInPlace(neuronErrors);
+            _neurons[i].Backpropagate(inputs, errors[i], neuronErrors, learningRate);
+            outputErrors.AddInPlace(neuronErrors);
         }
-        
-        return accumulatedErrors;
     }
 
     public override string ToString()

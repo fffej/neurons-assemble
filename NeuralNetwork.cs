@@ -42,7 +42,9 @@ class NeuralNetworkImpl : NeuralNetwork
         Vector currentErrors = outputErrors;
         for (int i = _layers.Count - 1; i >= 0; i--)
         {
-            currentErrors = _layers[i].Backpropagate(_activations[i], currentErrors, learningRate);
+            Vector layerErrors = new Vector(_activations[i].Length); // Buffer for layer errors, sized to this layer's input
+            _layers[i].Backpropagate(_activations[i], currentErrors, layerErrors, learningRate);
+            currentErrors = layerErrors;
         }
     }
 
