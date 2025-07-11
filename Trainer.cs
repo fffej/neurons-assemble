@@ -47,16 +47,20 @@ class Trainer
         // Train on each input-output pair
         for (int i = 0; i < _trainingInputs.Length; i++)
         {
-            _inputVector.CopyFrom(_trainingInputs[i]);
+            _inputVector.CopyFrom(_trainingInputs[i].AsSpan());
             var outputs = _network.FeedForward(_inputVector);
             
             _outputVector.CopyFrom(outputs);
             
             _errorVector.Zero();
+            var errorSpan = _errorVector.AsSpan();
+            var expectedSpan = _expectedOutputs[i].AsSpan();
+            var outputSpan = _outputVector.AsReadOnlySpan();
+            
             for (int j = 0; j < outputs.Length; j++)
             {                    
-                _errorVector[j] = _expectedOutputs[i][j] - _outputVector[j];
-                totalError += Math.Abs(_errorVector[j]);
+                errorSpan[j] = expectedSpan[j] - outputSpan[j];
+                totalError += Math.Abs(errorSpan[j]);
             }
 
             _network.BackPropagate(_inputVector, _errorVector, _learningRate);

@@ -19,9 +19,10 @@ class LayerImpl : Layer
 
     public Vector FeedForward(Vector inputs)
     {
+        var outputSpan = _output.AsSpan();
         for (int i = 0; i < _neurons.Length; i++)
         {
-            _output[i] = _neurons[i].FeedForward(inputs);
+            outputSpan[i] = _neurons[i].FeedForward(inputs);
         }
         return _output;
     }
@@ -31,9 +32,10 @@ class LayerImpl : Layer
         // Clear output errors first
         outputErrors.Zero();
         
+        var errorsSpan = errors.AsReadOnlySpan();
         for (int i = 0; i < _neurons.Length; i++)
         {
-            _neurons[i].Backpropagate(inputs, errors[i], _neuronErrors, learningRate);
+            _neurons[i].Backpropagate(inputs, errorsSpan[i], _neuronErrors, learningRate);
             outputErrors.AddInPlace(_neuronErrors);
         }
     }

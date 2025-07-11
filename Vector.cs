@@ -2,7 +2,6 @@ using System.Numerics;
 
 namespace BackPropNN;
 
-// We don't use anything built in, so that we can understand all the things that are happening!
 class Vector
 {
     private double[] _elements;
@@ -46,24 +45,43 @@ class Vector
 
     public int Length => _elements.Length;
 
-    // In-place operations to avoid allocations
+    public Span<double> AsSpan() => _elements;
+    
+    public ReadOnlySpan<double> AsReadOnlySpan() => _elements;
+
     public void CopyFrom(Vector source)
     {
         if (source.Length != Length)
             throw new ArgumentException("Vectors must be the same size for copy");
-        Array.Copy(source._elements, _elements, Length);
+        
+        var sourceSpan = source.AsReadOnlySpan();
+        var destSpan = AsSpan();
+        sourceSpan.CopyTo(destSpan);
     }
 
     public void CopyFrom(double[] source)
     {
         if (source.Length != Length)
             throw new ArgumentException("Array must be the same size for copy");
-        Array.Copy(source, _elements, Length);
+        
+        var sourceSpan = source.AsSpan();
+        var destSpan = AsSpan();
+        sourceSpan.CopyTo(destSpan);
+    }
+
+    public void CopyFrom(ReadOnlySpan<double> source)
+    {
+        if (source.Length != Length)
+            throw new ArgumentException("Span must be the same size for copy");
+        
+        var destSpan = AsSpan();
+        source.CopyTo(destSpan);
     }
 
     public void Zero()
     {
-        Array.Clear(_elements);
+        var span = AsSpan();
+        span.Clear();
     }
 
     public void AddInPlace(Vector other)
@@ -71,23 +89,47 @@ class Vector
         if (other.Length != Length)
             throw new ArgumentException("Vectors must be the same length for addition");
         
-        for (int i = 0; i < Length; i++)
+        var thisSpan = AsSpan();
+        var otherSpan = other.AsReadOnlySpan();
+        
+        for (int i = 0; i < thisSpan.Length; i++)
         {
-            _elements[i] += other._elements[i];
+            thisSpan[i] += otherSpan[i];
         }
     }
 
-    public static double DotProduct(Vector v1, Vector v2)
+    public void AddInPlace(ReadOnlySpan<double> other)
+    {
+        if (other.Length != Length)
+            throw new ArgumentException("Span must be the same length for addition");
+        
+        var thisSpan = AsSpan();
+        
+        for (int i = 0; i < thisSpan.Length; i++)
+        {
+            thisSpan[i] += other[i];
+        }
+    }
+
+    public static double DotProduct(ReadOnlySpan<double> v1, ReadOnlySpan<double> v2)
     {
         if (v1.Length != v2.Length)
-            throw new ArgumentException("Vectors must be the same size for dot product");
+            throw new ArgumentException("Spans must be the same size for dot product");
 
         double sum = 0;
-        for (int i=0;i<v1.Length;i++)
+        for (int i = 0; i < v1.Length; i++)
             sum += v1[i] * v2[i];
 
         return sum;
-    }      
+    }
+
+    // Create a new vector from a span
+    public static Vector FromSpan(ReadOnlySpan<double> span)
+    {
+        var vector = new Vector(span.Length);
+        span.CopyTo(vector.AsSpan());
+        return vector;
+    }
     
     public override string ToString()
     {

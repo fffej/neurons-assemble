@@ -58,7 +58,7 @@ class Program
                 XOR();
                 break;
             case "mnist":
-                MNist(100);
+                MNist(1);
                 break;
             default:
                 Console.WriteLine($"Unknown command: {args[0]}");
@@ -136,7 +136,7 @@ class Program
         Console.WriteLine("\nTesting the network:");
         foreach (var input in inputs)
         {
-            var output = network.FeedForward(new Vector(input, false));
+            var output = network.FeedForward(Vector.FromSpan(input.AsSpan()));
             Console.WriteLine($"Input: ({input[0]}, {input[1]}) -> Output: {output[0]:F4}");
         }
     }

@@ -28,8 +28,9 @@ class MultiInputNeuron : Neuron
         // Xavier initialization
         _weights = new Vector(inputSize);
         double sqrtVariance = Math.Sqrt(1.0 / inputSize);
-        for (int i=0; i < _weights.Length; i++)
-            _weights[i] = _random.NextGaussian(0, sqrtVariance);
+        var weightsSpan = _weights.AsSpan();
+        for (int i = 0; i < weightsSpan.Length; i++)
+            weightsSpan[i] = _random.NextGaussian(0, sqrtVariance);
 
         _bias = _random.NextGaussian(0, sqrtVariance);
     }
@@ -39,7 +40,7 @@ class MultiInputNeuron : Neuron
         if (inputs.Length != _weights.Length)
             throw new ArgumentException("Number of inputs must match number of weights");
 
-        _lastOutput = Sigmoid(Vector.DotProduct(_weights, inputs) + _bias);
+        _lastOutput = Sigmoid(Vector.DotProduct(_weights.AsReadOnlySpan(), inputs.AsReadOnlySpan()) + _bias);
         return _lastOutput;
     }
 
@@ -54,14 +55,19 @@ class MultiInputNeuron : Neuron
         double sigmoidDeriv = SigmoidDerivative(_lastOutput);
         double delta = error * sigmoidDeriv;            
         
-        for (int i = 0; i < _weights.Length; i++)
+        var weightsSpan = _weights.AsReadOnlySpan();
+        var errorsSpan = errors.AsSpan();
+        var inputsSpan = inputs.AsReadOnlySpan();
+        
+        for (int i = 0; i < weightsSpan.Length; i++)
         {
-            errors[i] = _weights[i] * delta;
+            errorsSpan[i] = weightsSpan[i] * delta;
         }
 
-        for (int i = 0; i < _weights.Length; i++)
+        var weightsWritableSpan = _weights.AsSpan();
+        for (int i = 0; i < weightsWritableSpan.Length; i++)
         {
-            _weights[i] += learningRate * delta * inputs[i];
+            weightsWritableSpan[i] += learningRate * delta * inputsSpan[i];
         }
         _bias += learningRate * delta;
     }

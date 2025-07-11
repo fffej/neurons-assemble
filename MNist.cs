@@ -38,11 +38,12 @@ public class MNistLoader
 
         // Create the target double array
         double[] doubleArray = new double[rows * cols];
+        var doubleSpan = doubleArray.AsSpan();
 
         // Copy each element, converting from byte to double
         for (int i = 0; i < rows; i++)
             for (int j = 0; j < cols; j++)
-                doubleArray[i * cols + j] = (double)byteArray[i, j] / 255.0; // Normalize to [0, 1]
+                doubleSpan[i * cols + j] = (double)byteArray[i, j] / 255.0; // Normalize to [0, 1]
 
         return doubleArray;
     }
