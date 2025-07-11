@@ -89,13 +89,7 @@ class Vector
         if (other.Length != Length)
             throw new ArgumentException("Vectors must be the same length for addition");
         
-        var thisSpan = AsSpan();
-        var otherSpan = other.AsReadOnlySpan();
-        
-        for (int i = 0; i < thisSpan.Length; i++)
-        {
-            thisSpan[i] += otherSpan[i];
-        }
+        AddInPlace(other.AsReadOnlySpan());
     }
 
     public void AddInPlace(ReadOnlySpan<double> other)
@@ -104,8 +98,20 @@ class Vector
             throw new ArgumentException("Span must be the same length for addition");
         
         var thisSpan = AsSpan();
+        int vectorSize = Vector<double>.Count;
+        int vectorizedLength = thisSpan.Length - (thisSpan.Length % vectorSize);
         
-        for (int i = 0; i < thisSpan.Length; i++)
+        // Vectorized addition
+        for (int i = 0; i < vectorizedLength; i += vectorSize)
+        {
+            var v1 = new Vector<double>(thisSpan.Slice(i, vectorSize));
+            var v2 = new Vector<double>(other.Slice(i, vectorSize));
+            var result = v1 + v2;
+            result.CopyTo(thisSpan.Slice(i, vectorSize));
+        }
+        
+        // Handle remaining elements
+        for (int i = vectorizedLength; i < thisSpan.Length; i++)
         {
             thisSpan[i] += other[i];
         }
@@ -116,9 +122,31 @@ class Vector
         if (v1.Length != v2.Length)
             throw new ArgumentException("Spans must be the same size for dot product");
 
+        int vectorSize = Vector<double>.Count;
+        int vectorizedLength = v1.Length - (v1.Length % vectorSize);
+        
+        var sumVector = Vector<double>.Zero;
+        
+        // Vectorized dot product
+        for (int i = 0; i < vectorizedLength; i += vectorSize)
+        {
+            var vec1 = new Vector<double>(v1.Slice(i, vectorSize));
+            var vec2 = new Vector<double>(v2.Slice(i, vectorSize));
+            sumVector += vec1 * vec2;
+        }
+        
+        // Sum the vector elements
         double sum = 0;
-        for (int i = 0; i < v1.Length; i++)
+        for (int i = 0; i < vectorSize; i++)
+        {
+            sum += sumVector[i];
+        }
+        
+        // Handle remaining elements
+        for (int i = vectorizedLength; i < v1.Length; i++)
+        {
             sum += v1[i] * v2[i];
+        }
 
         return sum;
     }
@@ -129,8 +157,20 @@ class Vector
             throw new ArgumentException("Span must be the same length for element-wise multiplication");
         
         var thisSpan = AsSpan();
+        int vectorSize = Vector<double>.Count;
+        int vectorizedLength = thisSpan.Length - (thisSpan.Length % vectorSize);
+        var scalarVector = new Vector<double>(scalar);
         
-        for (int i = 0; i < thisSpan.Length; i++)
+        // Vectorized multiplication
+        for (int i = 0; i < vectorizedLength; i += vectorSize)
+        {
+            var otherVec = new Vector<double>(other.Slice(i, vectorSize));
+            var result = otherVec * scalarVector;
+            result.CopyTo(thisSpan.Slice(i, vectorSize));
+        }
+        
+        // Handle remaining elements
+        for (int i = vectorizedLength; i < thisSpan.Length; i++)
         {
             thisSpan[i] = other[i] * scalar;
         }
@@ -142,8 +182,21 @@ class Vector
             throw new ArgumentException("Span must be the same length for scaled addition");
         
         var thisSpan = AsSpan();
+        int vectorSize = Vector<double>.Count;
+        int vectorizedLength = thisSpan.Length - (thisSpan.Length % vectorSize);
+        var scalarVector = new Vector<double>(scalar);
         
-        for (int i = 0; i < thisSpan.Length; i++)
+        // Vectorized scaled addition
+        for (int i = 0; i < vectorizedLength; i += vectorSize)
+        {
+            var thisVec = new Vector<double>(thisSpan.Slice(i, vectorSize));
+            var otherVec = new Vector<double>(other.Slice(i, vectorSize));
+            var result = thisVec + (otherVec * scalarVector);
+            result.CopyTo(thisSpan.Slice(i, vectorSize));
+        }
+        
+        // Handle remaining elements
+        for (int i = vectorizedLength; i < thisSpan.Length; i++)
         {
             thisSpan[i] += other[i] * scalar;
         }
