@@ -6,21 +6,23 @@ class LayerImpl : Layer
 {
     private Neuron[] _neurons;
 
+    private Vector _output;
+
     public LayerImpl(int neuronCount, int inputsPerNeuron, Func<int, Neuron> funcFactory)
     {
         _neurons = new Neuron[neuronCount];
         for (int i = 0; i < neuronCount; i++)
             _neurons[i] = funcFactory(inputsPerNeuron); 
+        _output = new Vector(_neurons.Length);
     }
 
     public Vector FeedForward(Vector inputs)
     {
-        Vector outputs = new Vector(_neurons.Length);
         for (int i = 0; i < _neurons.Length; i++)
         {
-            outputs[i] = _neurons[i].FeedForward(inputs);
+            _output[i] = _neurons[i].FeedForward(inputs);
         }
-        return outputs;
+        return _output;
     }
 
     public void Backpropagate(Vector inputs, Vector errors, Vector outputErrors, double learningRate)
