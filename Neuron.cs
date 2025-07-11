@@ -53,10 +53,16 @@ class MultiInputNeuron : Neuron
 
         double sigmoidDeriv = SigmoidDerivative(_lastOutput);
         double delta = error * sigmoidDeriv;            
-        Vector errors = delta * _weights;
+        
+        // Calculate errors
+        Vector errors = new Vector(_weights, false);
+        errors.MultiplyInPlace(delta);
 
         // Update weights and bias
-        _weights += learningRate * delta * inputs;        
+        for (int i = 0; i < _weights.Length; i++)
+        {
+            _weights[i] += learningRate * delta * inputs[i];
+        }
         _bias += learningRate * delta;
         
         return errors;

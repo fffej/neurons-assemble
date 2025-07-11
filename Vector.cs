@@ -12,11 +12,31 @@ class Vector
         _elements = new double[size];
     }
 
-    public Vector(double[] elements)
+    public Vector(double[] elements, bool takeOwnership)
     {
-        _elements = new double[elements.Length];
-        Array.Copy(elements, _elements, elements.Length);
+        if (takeOwnership)
+        {
+            _elements = elements;
+        }
+        else
+        {
+            _elements = new double[elements.Length];
+            Array.Copy(elements, _elements, elements.Length);
+        }
     }
+
+    public Vector(Vector vector, bool takeOwnership)
+    {
+        if (takeOwnership)
+        {
+            _elements = vector._elements;
+        }
+        else
+        {
+            _elements = new double[vector._elements.Length];
+            Array.Copy(vector._elements, _elements, vector._elements.Length);
+        }
+    }    
 
     public double this[int index]
     {
@@ -25,6 +45,67 @@ class Vector
     }
 
     public int Length => _elements.Length;
+
+    // In-place operations to avoid allocations
+    public void CopyFrom(Vector source)
+    {
+        if (source.Length != Length)
+            throw new ArgumentException("Vectors must be the same size for copy");
+        Array.Copy(source._elements, _elements, Length);
+    }
+
+    public void CopyFrom(double[] source)
+    {
+        if (source.Length != Length)
+            throw new ArgumentException("Array must be the same size for copy");
+        Array.Copy(source, _elements, Length);
+    }
+
+    public void Zero()
+    {
+        Array.Clear(_elements);
+    }
+
+    public void AddInPlace(Vector other)
+    {
+        if (other.Length != Length)
+            throw new ArgumentException("Vectors must be the same length for addition");
+        
+        for (int i = 0; i < Length; i++)
+        {
+            _elements[i] += other._elements[i];
+        }
+    }
+
+    // In-place element-wise multiplication
+    public void MultiplyInPlace(Vector other)
+    {
+        if (other.Length != Length)
+            throw new ArgumentException("Vectors must be the same length for element-wise multiplication");
+        
+        for (int i = 0; i < Length; i++)
+        {
+            _elements[i] *= other._elements[i];
+        }
+    }
+
+    // In-place scalar multiplication
+    public void MultiplyInPlace(double scalar)
+    {
+        for (int i = 0; i < Length; i++)
+        {
+            _elements[i] *= scalar;
+        }
+    }
+
+    // In-place scalar addition
+    public void AddInPlace(double scalar)
+    {
+        for (int i = 0; i < Length; i++)
+        {
+            _elements[i] += scalar;
+        }
+    }
 
     public static double DotProduct(Vector v1, Vector v2)
     {
@@ -45,7 +126,7 @@ class Vector
         {
             result[i] = vector[i] * scalar;
         }
-        return new Vector(result);
+        return new Vector(result, true); // Take ownership
     }
 
     public static Vector operator *(Vector left, Vector right)
@@ -58,7 +139,7 @@ class Vector
         {
             result[i] = left[i] * right[i];
         }
-        return new Vector(result);
+        return new Vector(result, true); // Take ownership
     }
 
     // Vector addition - optimized
@@ -72,7 +153,7 @@ class Vector
         {
             result[i] = left[i] + right[i];
         }
-        return new Vector(result);
+        return new Vector(result, true); // Take ownership
     }
     
     public override string ToString()

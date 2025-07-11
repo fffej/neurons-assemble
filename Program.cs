@@ -136,7 +136,7 @@ class Program
         Console.WriteLine("\nTesting the network:");
         foreach (var input in inputs)
         {
-            var output = network.FeedForward(new Vector(input));
+            var output = network.FeedForward(new Vector(input, false));
             Console.WriteLine($"Input: ({input[0]}, {input[1]}) -> Output: {output[0]:F4}");
         }
     }
@@ -153,6 +153,6 @@ class Program
         var network = new NeuralNetworkImpl(new NeuralNetworkFactoryImpl(), 784, 50, 10);
 
         // Train the network
-        new Trainer(network, trainingInputs, trainingLabels, 0.1, epochs).TrainWithTiming();
+        new Trainer(network, trainingInputs, trainingLabels, 0.1, epochs).Train();
     }
 }

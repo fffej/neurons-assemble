@@ -5,6 +5,7 @@ namespace BackPropNN;
 class NeuralNetworkImpl : NeuralNetwork
 {
     private List<Layer> _layers = []; 
+    private List<Vector> _activations = new List<Vector>();
 
     public NeuralNetworkImpl(NeuralNetworkFactory factory, params int[] layerSizes)
     {
@@ -12,33 +13,37 @@ class NeuralNetworkImpl : NeuralNetwork
             _layers.Add(factory.CreateLayer(layerSizes[i], layerSizes[i - 1]));
     }
 
-    private List<Vector> _activations = new List<Vector>();
-
     public Vector FeedForward(Vector inputs) 
     { 
-        _activations = new List<Vector> { inputs };
-        return _layers.Aggregate(inputs, (currentOutputs, layer) => {
-            var output = layer.FeedForward(currentOutputs);
+        // Clear and reuse activation list
+        _activations.Clear();
+        _activations.Add(inputs);
+        
+        Vector currentOutputs = inputs;
+        for (int i = 0; i < _layers.Count; i++)
+        {
+            var output = _layers[i].FeedForward(currentOutputs);
             _activations.Add(output);
-            return output;
-        });
+            currentOutputs = output;
+        }
+        
+        return currentOutputs;
     }
 
     public void BackPropagate(Vector initialInputs, Vector outputErrors, double learningRate)
     {
-            // We assume that FeedForward has been called before this method
-            if (_activations.Count == 0)
-            {
-                // We don't go down this path, but just in case              
-                FeedForward(initialInputs);
-            }
+        // We assume that FeedForward has been called before this method
+        if (_activations.Count == 0)
+        {
+            // We don't go down this path, but just in case              
+            FeedForward(initialInputs);
+        }
 
-            var _= Enumerable.Range(0, _layers.Count)
-                    .Reverse()
-                    .Aggregate(
-                        outputErrors,
-                        (currentErrors, i) => _layers[i].Backpropagate(_activations[i], currentErrors, learningRate)
-                    );   
+        Vector currentErrors = outputErrors;
+        for (int i = _layers.Count - 1; i >= 0; i--)
+        {
+            currentErrors = _layers[i].Backpropagate(_activations[i], currentErrors, learningRate);
+        }
     }
 
     public override string ToString()

@@ -9,6 +9,11 @@ class Trainer
     private double[][] _expectedOutputs;
     private double _learningRate;
     private int _epochs;
+    
+    // Pre-allocated vectors to avoid repeated allocations
+    private Vector _inputVector;
+    private Vector _outputVector;
+    private Vector _errorVector;
 
     public Trainer(NeuralNetwork network, double[][] trainingInputs, double[][] expectedOutputs, double learningRate, int epochs)
     {
@@ -17,6 +22,14 @@ class Trainer
         _expectedOutputs = expectedOutputs;
         _learningRate = learningRate;
         _epochs = epochs;
+        
+        // Pre-allocate vectors (assume they are the same size)
+        int maxInputSize = trainingInputs[0].Length;
+        int maxOutputSize = expectedOutputs[0].Length;
+        
+        _inputVector = new Vector(maxInputSize);
+        _outputVector = new Vector(maxOutputSize);
+        _errorVector = new Vector(maxOutputSize);
     }
 
     public void Train()
@@ -34,42 +47,19 @@ class Trainer
         // Train on each input-output pair
         for (int i = 0; i < _trainingInputs.Length; i++)
         {
-            var outputs = _network.FeedForward(new Vector(_trainingInputs[i]));
-            var errors = new Vector(outputs.Length);
+            _inputVector.CopyFrom(_trainingInputs[i]);
+            var outputs = _network.FeedForward(_inputVector);
+            
+            _outputVector.CopyFrom(outputs);
+            
+            _errorVector.Zero();
             for (int j = 0; j < outputs.Length; j++)
             {                    
-                errors[j] = _expectedOutputs[i][j] - outputs[j];
-                totalError += Math.Abs(errors[j]);
+                _errorVector[j] = _expectedOutputs[i][j] - _outputVector[j];
+                totalError += Math.Abs(_errorVector[j]);
             }
 
-            _network.BackPropagate(new Vector(_trainingInputs[i]), errors, _learningRate);
-        }
-    }
-
-    public void TrainWithTiming()
-    {
-        for (int epoch = 0; epoch < _epochs; epoch++)
-        {
-            double totalError = 0;
-            var stopWatch = new Stopwatch();
-            stopWatch.Start();
-
-            // Train on each input-output pair
-            for (int i = 0; i < _trainingInputs.Length; i++)
-            {
-                var outputs = _network.FeedForward(new Vector(_trainingInputs[i]));
-                var errors = new Vector(outputs.Length);
-                for (int j = 0; j < outputs.Length; j++)
-                {                    
-                    errors[j] = _expectedOutputs[i][j] - outputs[j];
-                    totalError += Math.Abs(errors[j]);
-                }
-
-                _network.BackPropagate(new Vector(_trainingInputs[i]), errors, _learningRate);
-            }
-
-            stopWatch.Stop();
-            Console.WriteLine($"Epoch={epoch + 1}: Average Abs Error={totalError / _trainingInputs.Length} Time={stopWatch.ElapsedMilliseconds} ms");
+            _network.BackPropagate(_inputVector, _errorVector, _learningRate);
         }
     }
 }

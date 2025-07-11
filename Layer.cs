@@ -13,15 +13,28 @@ class LayerImpl : Layer
             _neurons[i] = funcFactory(inputsPerNeuron); 
     }
 
-    public Vector FeedForward(Vector inputs) => 
-        new Vector(_neurons.Select(n => n.FeedForward(inputs)).ToArray());
+    public Vector FeedForward(Vector inputs)
+    {
+        Vector outputs = new Vector(_neurons.Length);
+        for (int i = 0; i < _neurons.Length; i++)
+        {
+            outputs[i] = _neurons[i].FeedForward(inputs);
+        }
+        return outputs;
+    }
 
-    public Vector Backpropagate(Vector inputs, Vector errors, double learningRate) =>
-        _neurons.Select((neuron, i) => neuron.Backpropagate(inputs, errors[i], learningRate))
-                  .Aggregate(
-                      new Vector(inputs.Length), // Start with a zero vector of the right size
-                      (accumulatedErrors, neuronErrors) => accumulatedErrors + neuronErrors
-                  );
+    public Vector Backpropagate(Vector inputs, Vector errors, double learningRate)
+    {
+        Vector accumulatedErrors = new Vector(inputs.Length);
+        
+        for (int i = 0; i < _neurons.Length; i++)
+        {
+            Vector neuronErrors = _neurons[i].Backpropagate(inputs, errors[i], learningRate);
+            accumulatedErrors.AddInPlace(neuronErrors);
+        }
+        
+        return accumulatedErrors;
+    }
 
     public override string ToString()
     {
