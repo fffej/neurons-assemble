@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Text;
+using BenchmarkDotNet.Running;
 
 namespace BackPropNN;
 
@@ -33,17 +34,37 @@ interface NeuralNetworkFactory
 
 class Program
 {
-    class NeuralNetworkFactoryImpl : NeuralNetworkFactory
-    {
-        public Neuron CreateNeuron(int inputSize) => new MultiInputNeuron(inputSize);
-        public Layer CreateLayer(int neuronCount, int inputsPerNeuron) => new LayerImpl(neuronCount, inputsPerNeuron, CreateNeuron);
-    }
-
     static void Main(string[] args)
     {
-        OR();
-        //XOR();
-        //MNist();
+        if (args.Length == 0)
+        {
+            Console.WriteLine("Usage:");
+            Console.WriteLine("  dotnet run bench    - Run benchmarks");
+            Console.WriteLine("  dotnet run or       - Run OR demo");
+            Console.WriteLine("  dotnet run xor      - Run XOR demo");
+            Console.WriteLine("  dotnet run mnist    - Run MNIST demo (100 epochs)");
+            return;
+        }
+
+        switch (args[0].ToLower())
+        {
+            case "bench":
+                BenchmarkRunner.Run<TrainingBenchmark>();
+                break;
+            case "or":
+                OR();
+                break;
+            case "xor":
+                XOR();
+                break;
+            case "mnist":
+                MNist(100);
+                break;
+            default:
+                Console.WriteLine($"Unknown command: {args[0]}");
+                Console.WriteLine("Available commands: bench, or, xor, mnist");
+                break;
+        }
     }
 
     class OrNeuron
@@ -120,7 +141,7 @@ class Program
         }
     }
 
-    static void MNist() 
+    static void MNist(int epochs = 100) 
     {
         // Load MNIST data
         var (trainingInputs, trainingLabels) = MNistLoader.Load();
@@ -128,10 +149,10 @@ class Program
         Console.Out.WriteLine("Size of training set: " + trainingLabels.Length);
         Console.Out.WriteLine("Size of sample:" + trainingInputs[0].Length);
 
-        // Create a neural network with 784 inputs (28x28 images), 100 hidden neurons, and 10 outputs (digits 0-9)
+        // Create a neural network with 784 inputs (28x28 images), 50 hidden neurons, and 10 outputs (digits 0-9)
         var network = new NeuralNetworkImpl(new NeuralNetworkFactoryImpl(), 784, 50, 10);
 
         // Train the network
-        new Trainer(network, trainingInputs, trainingLabels, 0.1, 100).Train();
+        new Trainer(network, trainingInputs, trainingLabels, 0.1, epochs).TrainWithTiming();
     }
 }

@@ -1,10 +1,18 @@
 using MNIST.IO;
+using System;
+using System.IO;
 
 public class MNistLoader
 {
     public static (double[][], double[][]) Load()
     {
-        var data = FileReaderMNIST.LoadImagesAndLables("data/train-labels-idx1-ubyte.gz", "data/train-images-idx3-ubyte.gz").ToList();
+        // Use AppContext.BaseDirectory to get the directory where the app is running
+        string baseDir = AppContext.BaseDirectory;
+        string dataDir = Path.Combine(baseDir, "data");
+        string labelsPath = Path.Combine(dataDir, "train-labels-idx1-ubyte.gz");
+        string imagesPath = Path.Combine(dataDir, "train-images-idx3-ubyte.gz");
+
+        var data = FileReaderMNIST.LoadImagesAndLables(labelsPath, imagesPath).ToList();
 
         var n = data.Count;
 
