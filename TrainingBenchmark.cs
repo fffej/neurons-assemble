@@ -1,9 +1,15 @@
 using BenchmarkDotNet.Attributes;
 using BenchmarkDotNet.Running;
+using BenchmarkDotNet.Configs;
+using BenchmarkDotNet.Diagnosers;
+using BenchmarkDotNet.Environments;
+using BenchmarkDotNet.Jobs;
+using BenchmarkDotNet.Toolchains.InProcess.Emit;
 
 namespace BackPropNN;
 
 [MemoryDiagnoser]
+[HardwareCounters(HardwareCounter.CacheMisses, HardwareCounter.BranchMispredictions)]
 public class TrainingBenchmark
 {
     private Trainer? _xorTrainer;
