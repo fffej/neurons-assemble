@@ -42,6 +42,7 @@ class Program
             Console.WriteLine("  dotnet run bench    - Run benchmarks");
             Console.WriteLine("  dotnet run or       - Run OR demo");
             Console.WriteLine("  dotnet run xor      - Run XOR demo");
+            Console.WriteLine("  dotnet run xor-opt  - Run XOR demo with optimized layers");
             Console.WriteLine("  dotnet run mnist    - Run MNIST demo (100 epochs)");
             return;
         }
@@ -57,12 +58,15 @@ class Program
             case "xor":
                 XOR();
                 break;
+            case "xor-opt":
+                XOROptimized();
+                break;
             case "mnist":
                 MNist(1);
                 break;
             default:
                 Console.WriteLine($"Unknown command: {args[0]}");
-                Console.WriteLine("Available commands: bench, or, xor, mnist");
+                Console.WriteLine("Available commands: bench, or, xor, xor-opt, mnist");
                 break;
         }
     }
@@ -134,6 +138,29 @@ class Program
 
         // Test the network
         Console.WriteLine("\nTesting the network:");
+        foreach (var input in inputs)
+        {
+            var output = network.FeedForward(Vector.FromSpan(input.AsSpan()));
+            Console.WriteLine($"Input: ({input[0]}, {input[1]}) -> Output: {output[0]:F4}");
+        }
+    }
+
+    static void XOROptimized()
+    {
+        Console.WriteLine("Running XOR with Optimized Layers (Structure-of-Arrays)");
+        
+        // Create a neural network with 2 inputs, 3 hidden neurons, and 1 output using optimized layers
+        var network = new NeuralNetworkImpl(new OptimizedNeuralNetworkFactory(), 2, 3, 1);
+
+        // XOR training data
+        double[][] inputs = [[0, 0], [0, 1], [1, 0], [1, 1]];
+        double[][] expectedOutputs = [ [0], [1], [1],  [0] ];
+
+        new Trainer(network, inputs, expectedOutputs, 0.1, 100000).Train();
+        Console.WriteLine("Training complete. Final weights and biases:");
+
+        // Test the network
+        Console.WriteLine("\nTesting the optimized network:");
         foreach (var input in inputs)
         {
             var output = network.FeedForward(Vector.FromSpan(input.AsSpan()));
