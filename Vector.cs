@@ -1,4 +1,5 @@
 using System.Numerics;
+using System.Runtime.CompilerServices;
 
 namespace BackPropNN;
 
@@ -54,9 +55,17 @@ class Vector
         if (source.Length != Length)
             throw new ArgumentException("Vectors must be the same size for copy");
         
-        var sourceSpan = source.AsReadOnlySpan();
-        var destSpan = AsSpan();
-        sourceSpan.CopyTo(destSpan);
+        unsafe
+        {
+            var sourceSpan = source.AsReadOnlySpan();
+            var destSpan = AsSpan();
+            
+            fixed (double* srcPtr = sourceSpan)
+            fixed (double* destPtr = destSpan)
+            {
+                Buffer.MemoryCopy(srcPtr, destPtr, Length * sizeof(double), Length * sizeof(double));
+            }
+        }
     }
 
     public void CopyFrom(double[] source)
@@ -64,9 +73,17 @@ class Vector
         if (source.Length != Length)
             throw new ArgumentException("Array must be the same size for copy");
         
-        var sourceSpan = source.AsSpan();
-        var destSpan = AsSpan();
-        sourceSpan.CopyTo(destSpan);
+        unsafe
+        {
+            var sourceSpan = source.AsSpan();
+            var destSpan = AsSpan();
+            
+            fixed (double* srcPtr = sourceSpan)
+            fixed (double* destPtr = destSpan)
+            {
+                Buffer.MemoryCopy(srcPtr, destPtr, Length * sizeof(double), Length * sizeof(double));
+            }
+        }
     }
 
     public void CopyFrom(ReadOnlySpan<double> source)
@@ -74,14 +91,28 @@ class Vector
         if (source.Length != Length)
             throw new ArgumentException("Span must be the same size for copy");
         
-        var destSpan = AsSpan();
-        source.CopyTo(destSpan);
+        unsafe
+        {
+            var destSpan = AsSpan();
+            
+            fixed (double* srcPtr = source)
+            fixed (double* destPtr = destSpan)
+            {
+                Buffer.MemoryCopy(srcPtr, destPtr, Length * sizeof(double), Length * sizeof(double));
+            }
+        }
     }
 
     public void Zero()
     {
-        var span = AsSpan();
-        span.Clear();
+        unsafe
+        {
+            var span = AsSpan();
+            fixed (double* ptr = span)
+            {
+                Unsafe.InitBlock(ptr, 0, (uint)(Length * sizeof(double)));
+            }
+        }
     }
 
     public void AddInPlace(Vector other)
@@ -98,22 +129,29 @@ class Vector
             throw new ArgumentException("Span must be the same length for addition");
         
         var thisSpan = AsSpan();
-        int vectorSize = Vector<double>.Count;
-        int vectorizedLength = thisSpan.Length - (thisSpan.Length % vectorSize);
         
-        // Vectorized addition
-        for (int i = 0; i < vectorizedLength; i += vectorSize)
+        unsafe
         {
-            var v1 = new Vector<double>(thisSpan.Slice(i, vectorSize));
-            var v2 = new Vector<double>(other.Slice(i, vectorSize));
-            var result = v1 + v2;
-            result.CopyTo(thisSpan.Slice(i, vectorSize));
-        }
-        
-        // Handle remaining elements
-        for (int i = vectorizedLength; i < thisSpan.Length; i++)
-        {
-            thisSpan[i] += other[i];
+            fixed (double* thisPtr = thisSpan)
+            fixed (double* otherPtr = other)
+            {
+                int vectorSize = Vector<double>.Count;
+                int vectorizedLength = thisSpan.Length - (thisSpan.Length % vectorSize);
+                
+                // Vectorized addition using unsafe pointers
+                for (int i = 0; i < vectorizedLength; i += vectorSize)
+                {
+                    var v1 = Unsafe.Read<Vector<double>>(thisPtr + i);
+                    var v2 = Unsafe.Read<Vector<double>>(otherPtr + i);
+                    Unsafe.Write(thisPtr + i, v1 + v2);
+                }
+                
+                // Handle remaining elements
+                for (int i = vectorizedLength; i < thisSpan.Length; i++)
+                {
+                    thisPtr[i] += otherPtr[i];
+                }
+            }
         }
     }
 
@@ -122,33 +160,40 @@ class Vector
         if (v1.Length != v2.Length)
             throw new ArgumentException("Spans must be the same size for dot product");
 
-        int vectorSize = Vector<double>.Count;
-        int vectorizedLength = v1.Length - (v1.Length % vectorSize);
-        
-        var sumVector = Vector<double>.Zero;
-        
-        // Vectorized dot product
-        for (int i = 0; i < vectorizedLength; i += vectorSize)
+        unsafe
         {
-            var vec1 = new Vector<double>(v1.Slice(i, vectorSize));
-            var vec2 = new Vector<double>(v2.Slice(i, vectorSize));
-            sumVector += vec1 * vec2;
-        }
-        
-        // Sum the vector elements
-        double sum = 0;
-        for (int i = 0; i < vectorSize; i++)
-        {
-            sum += sumVector[i];
-        }
-        
-        // Handle remaining elements
-        for (int i = vectorizedLength; i < v1.Length; i++)
-        {
-            sum += v1[i] * v2[i];
-        }
+            fixed (double* v1Ptr = v1)
+            fixed (double* v2Ptr = v2)
+            {
+                int vectorSize = Vector<double>.Count;
+                int vectorizedLength = v1.Length - (v1.Length % vectorSize);
+                
+                var sumVector = Vector<double>.Zero;
+                
+                // Vectorized dot product using unsafe pointers
+                for (int i = 0; i < vectorizedLength; i += vectorSize)
+                {
+                    var vec1 = Unsafe.Read<Vector<double>>(v1Ptr + i);
+                    var vec2 = Unsafe.Read<Vector<double>>(v2Ptr + i);
+                    sumVector += vec1 * vec2;
+                }
+                
+                // Sum the vector elements
+                double sum = 0;
+                for (int i = 0; i < vectorSize; i++)
+                {
+                    sum += sumVector[i];
+                }
+                
+                // Handle remaining elements
+                for (int i = vectorizedLength; i < v1.Length; i++)
+                {
+                    sum += v1Ptr[i] * v2Ptr[i];
+                }
 
-        return sum;
+                return sum;
+            }
+        }
     }
 
     public void MultiplyElementWise(ReadOnlySpan<double> other, double scalar)
@@ -157,22 +202,30 @@ class Vector
             throw new ArgumentException("Span must be the same length for element-wise multiplication");
         
         var thisSpan = AsSpan();
-        int vectorSize = Vector<double>.Count;
-        int vectorizedLength = thisSpan.Length - (thisSpan.Length % vectorSize);
-        var scalarVector = new Vector<double>(scalar);
         
-        // Vectorized multiplication
-        for (int i = 0; i < vectorizedLength; i += vectorSize)
+        unsafe
         {
-            var otherVec = new Vector<double>(other.Slice(i, vectorSize));
-            var result = otherVec * scalarVector;
-            result.CopyTo(thisSpan.Slice(i, vectorSize));
-        }
-        
-        // Handle remaining elements
-        for (int i = vectorizedLength; i < thisSpan.Length; i++)
-        {
-            thisSpan[i] = other[i] * scalar;
+            fixed (double* thisPtr = thisSpan)
+            fixed (double* otherPtr = other)
+            {
+                int vectorSize = Vector<double>.Count;
+                int vectorizedLength = thisSpan.Length - (thisSpan.Length % vectorSize);
+                var scalarVector = new Vector<double>(scalar);
+                
+                // Vectorized multiplication using unsafe pointers
+                for (int i = 0; i < vectorizedLength; i += vectorSize)
+                {
+                    var otherVec = Unsafe.Read<Vector<double>>(otherPtr + i);
+                    var result = otherVec * scalarVector;
+                    Unsafe.Write(thisPtr + i, result);
+                }
+                
+                // Handle remaining elements
+                for (int i = vectorizedLength; i < thisSpan.Length; i++)
+                {
+                    thisPtr[i] = otherPtr[i] * scalar;
+                }
+            }
         }
     }
 
@@ -182,23 +235,31 @@ class Vector
             throw new ArgumentException("Span must be the same length for scaled addition");
         
         var thisSpan = AsSpan();
-        int vectorSize = Vector<double>.Count;
-        int vectorizedLength = thisSpan.Length - (thisSpan.Length % vectorSize);
-        var scalarVector = new Vector<double>(scalar);
         
-        // Vectorized scaled addition
-        for (int i = 0; i < vectorizedLength; i += vectorSize)
+        unsafe
         {
-            var thisVec = new Vector<double>(thisSpan.Slice(i, vectorSize));
-            var otherVec = new Vector<double>(other.Slice(i, vectorSize));
-            var result = thisVec + (otherVec * scalarVector);
-            result.CopyTo(thisSpan.Slice(i, vectorSize));
-        }
-        
-        // Handle remaining elements
-        for (int i = vectorizedLength; i < thisSpan.Length; i++)
-        {
-            thisSpan[i] += other[i] * scalar;
+            fixed (double* thisPtr = thisSpan)
+            fixed (double* otherPtr = other)
+            {
+                int vectorSize = Vector<double>.Count;
+                int vectorizedLength = thisSpan.Length - (thisSpan.Length % vectorSize);
+                var scalarVector = new Vector<double>(scalar);
+                
+                // Vectorized scaled addition using unsafe pointers
+                for (int i = 0; i < vectorizedLength; i += vectorSize)
+                {
+                    var thisVec = Unsafe.Read<Vector<double>>(thisPtr + i);
+                    var otherVec = Unsafe.Read<Vector<double>>(otherPtr + i);
+                    var result = thisVec + (otherVec * scalarVector);
+                    Unsafe.Write(thisPtr + i, result);
+                }
+                
+                // Handle remaining elements
+                for (int i = vectorizedLength; i < thisSpan.Length; i++)
+                {
+                    thisPtr[i] += otherPtr[i] * scalar;
+                }
+            }
         }
     }
 
