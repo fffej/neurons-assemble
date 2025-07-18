@@ -41,12 +41,33 @@ class Program
 
     static void Main(string[] args)
     {
-        OR();
-        //XOR();
-        //MNist();
+        if (args.Length == 0)
+        {
+            Console.WriteLine("Usage: dotnet run [or|xor|mnist]");
+            return;
+        }
+
+        switch (args[0].ToLower())
+        {
+            case "or":
+                OR();
+                break;
+            case "xorbad":
+                XORBad();
+                break;
+            case "xor":
+                XOR();
+                break;            
+            case "mnist":
+                MNist();
+                break;
+            default:
+                Console.WriteLine("Invalid argument. Expected 'or', 'xor', or 'mnist'.");
+                break;
+        }
     }
 
-    class OrNeuron
+    class SimpleNeuron
     {
         private double _w1 = 0;
         private double _w2 = 0;
@@ -66,6 +87,8 @@ class Program
             _w2 += learningRate * error * sigmoidDeriv * x2;
             _bias += learningRate * error * sigmoidDeriv;
         }
+
+        public override string ToString() => $"w1: {_w1}, w2: {_w2}, bias: {_bias}";
     }
 
     static void OR()
@@ -73,7 +96,7 @@ class Program
         double[][] inputs = [[0, 0], [0, 1], [1, 0], [1, 1]];
         double[][] expectedOutputs = [ [0], [1], [1],  [1] ];
 
-        var neuron = new OrNeuron();
+        var neuron = new SimpleNeuron();
 
         for (int epoch = 0; epoch < 100000; epoch++)
         {
@@ -85,7 +108,7 @@ class Program
                 neuron.Backpropagate(inputs[i][0], inputs[i][1], error, 0.1);
                 totalError += Math.Abs(error);
             }
-            if (epoch % 1000 == 0) 
+            if (epoch % 10000 == 0) 
             {
                 Console.WriteLine($"Epoch {epoch}: Total error = {totalError}");
             }
@@ -97,7 +120,44 @@ class Program
             double output = neuron.FeedForward(input[0], input[1]);
             Console.WriteLine($"Input: ({input[0]}, {input[1]}) -> Output: {output:F4}");
         }
+
+        Console.WriteLine("Training complete. Final weights and biases:");
+        Console.WriteLine(neuron.ToString());
     }
+
+static void XORBad()
+    {
+        double[][] inputs = [[0, 0], [0, 1], [1, 0], [1, 1]];
+        double[][] expectedOutputs = [ [0], [1], [1],  [0] ];
+
+        var neuron = new SimpleNeuron();
+
+        for (int epoch = 0; epoch < 100000; epoch++)
+        {
+            double totalError = 0;
+            for (int i = 0; i < inputs.Length; i++)
+            {
+                double output = neuron.FeedForward(inputs[i][0], inputs[i][1]);
+                double error = expectedOutputs[i][0] - output;
+                neuron.Backpropagate(inputs[i][0], inputs[i][1], error, 0.1);
+                totalError += Math.Abs(error);
+            }
+            if (epoch % 10000 == 0) 
+            {
+                Console.WriteLine($"Epoch {epoch}: Total error = {totalError}");
+            }
+        }
+
+        Console.WriteLine("Testing the network:");
+        foreach (var input in inputs)
+        {
+            double output = neuron.FeedForward(input[0], input[1]);
+            Console.WriteLine($"Input: ({input[0]}, {input[1]}) -> Output: {output:F4}");
+        }
+
+        Console.WriteLine("Training complete. Final weights and biases:");
+        Console.WriteLine(neuron.ToString());
+    }    
 
     static void XOR()
     {
@@ -132,6 +192,6 @@ class Program
         var network = new NeuralNetworkImpl(new NeuralNetworkFactoryImpl(), 784, 50, 10);
 
         // Train the network
-        new Trainer(network, trainingInputs, trainingLabels, 0.1, 100).Train();
+        new Trainer(network, trainingInputs, trainingLabels, 0.1, 100).Train(1);
     }
 }

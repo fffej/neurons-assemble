@@ -19,7 +19,7 @@ class Trainer
         _epochs = epochs;
     }
 
-    public void Train()
+    public void Train(int reportingFrequency = 10000)
     {
         for (int epoch = 0; epoch < _epochs; epoch++)
         {
@@ -42,7 +42,10 @@ class Trainer
             }
 
             stopWatch.Stop();
-            Console.WriteLine($"Epoch={epoch + 1}: Average Abs Error={totalError / _trainingInputs.Length} Time={stopWatch.ElapsedMilliseconds} ms");
+            if (epoch % reportingFrequency == 0) 
+            {
+                Console.WriteLine($"Epoch={epoch + 1}: Average Abs Error={totalError / _trainingInputs.Length} Time={stopWatch.ElapsedMilliseconds} ms");
+            }
         }
     }
 }
